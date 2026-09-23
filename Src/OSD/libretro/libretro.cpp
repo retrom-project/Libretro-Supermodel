@@ -349,7 +349,11 @@ CoreOptions g_options = {
    /* legacy_sound_dsp     */ false,
    /* ppc_frequency        */ 0,
    /* frameskip            */ 0,
+#ifdef __EMSCRIPTEN__
+   /* emulation_threading  */ EmulationThreading::SingleThread,
+#else
    /* emulation_threading  */ EmulationThreading::MultiThreadedGPU,
+#endif
    /* sound_enable         */ true,
    /* jit_enable           */
 #ifdef __aarch64__
@@ -990,7 +994,7 @@ void context_reset(void)
     s_gpuQueryOK = false;
     s_gpuMs      = 0.0f;
     s_gpuSlot    = 0;
-#if defined(CORE_GLES)
+#if defined(CORE_GLES) && !defined(__EMSCRIPTEN__)
     if (glGenQueriesEXT && glBeginQueryEXT && glEndQueryEXT &&
         glGetQueryObjectuivEXT && glGetQueryObjectui64vEXT)
     {
@@ -1006,7 +1010,7 @@ void context_reset(void)
 void context_destroy(void)
 {
     g_context_ready = false;
-#if defined(CORE_GLES)
+#if defined(CORE_GLES) && !defined(__EMSCRIPTEN__)
     if (s_gpuQuery[0] && glDeleteQueriesEXT) { glDeleteQueriesEXT(2, s_gpuQuery); s_gpuQuery[0] = s_gpuQuery[1] = 0; }
 #endif
     Libretro_ShutdownOverlay();
