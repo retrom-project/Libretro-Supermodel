@@ -17,7 +17,7 @@ tar -C "$root" --null --verbatim-files-from -T "$work/source-files" \
 export RETROM_HOST_UID="$(id -u)"
 export RETROM_HOST_GID="$(id -g)"
 if ! docker run --rm --platform linux/amd64 --hostname retrom-supermodel \
-  --env RETROM_HOST_UID --env RETROM_HOST_GID \
+  --env RETROM_HOST_UID --env RETROM_HOST_GID --env SOURCE_DATE_EPOCH=0 \
   --volume "$work/source.tar:/source.tar:ro" \
   --volume "$root/.github/rpg-runtime:/recipe:ro" \
   --volume "$work/build:/work" \
