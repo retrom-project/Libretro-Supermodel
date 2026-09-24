@@ -29,6 +29,11 @@ void VBO::BufferSubData(GLintptr offset, GLsizeiptr size, const GLvoid* data)
 
 void VBO::UpdateDynamic(GLintptr offset, GLsizeiptr size, const GLvoid* data)
 {
+#ifdef __EMSCRIPTEN__
+	// WebGL 2 rejects MAP_UNSYNCHRONIZED and buffer mapping readback.
+	// glBufferSubData is the supported upload path in a browser.
+	glBufferSubData(m_target, offset, size, data);
+#else
 	// GL_MAP_UNSYNCHRONIZED_BIT: skip driver GPU sync — safe because the caller
 	// double-buffers the region (writes to slot N while GPU reads slot N-1).
 	// GL_MAP_INVALIDATE_RANGE_BIT: allow driver to return new backing memory.
@@ -40,6 +45,7 @@ void VBO::UpdateDynamic(GLintptr offset, GLsizeiptr size, const GLvoid* data)
 	} else {
 		glBufferSubData(m_target, offset, size, data);
 	}
+#endif
 }
 
 bool VBO::AppendData(GLsizeiptr size, const GLvoid* data)

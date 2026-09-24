@@ -13,6 +13,7 @@
 *.manifest
 nul
 /old
+/.retrom-build/
 
 # VS Code
 .vscode/

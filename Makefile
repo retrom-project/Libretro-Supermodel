@@ -244,6 +244,13 @@ ifdef DROP_LEGACY3D
     SOURCES_CXX := $(filter-out $(LEGACY3D_SOURCES),$(SOURCES_CXX))
 endif
 endif
+ifeq ($(platform),emscripten)
+    SOURCES_C := $(filter-out %/glsym/glsym_gl.c,$(SOURCES_C))
+    SOURCES_C += $(LIBRETRO_COMM_DIR)/glsym/glsym_es3.c
+ifdef DROP_LEGACY3D
+    SOURCES_CXX := $(filter-out $(LEGACY3D_SOURCES),$(SOURCES_CXX))
+endif
+endif
 ifeq ($(platform),linux-aarch64)
     SOURCES_C := $(filter-out %/glsym/glsym_gl.c,$(SOURCES_C))
     SOURCES_C += $(LIBRETRO_COMM_DIR)/glsym/glsym_es3.c
@@ -259,11 +266,11 @@ ifneq ($(filter $(CORE_DIR)/Src/Graphics/Legacy3D/Legacy3D.cpp,$(SOURCES_CXX)),)
     RENDERER_DEFINES += -DHAVE_LEGACY3D
 endif
 
-ifneq ($(filter $(platform),osx android rpi64 aarch64 linux-aarch64),$(platform))
+ifneq ($(filter $(platform),osx android rpi64 aarch64 linux-aarch64 emscripten),$(platform))
     RENDERER_DEFINES += -DHAVE_QUAD_RENDERING
 endif
 
-ifneq ($(filter $(platform),android rpi64 aarch64 linux-aarch64),$(platform))
+ifneq ($(filter $(platform),android rpi64 aarch64 linux-aarch64 emscripten),$(platform))
     RENDERER_DEFINES += -DHAVE_CRT_COLOURS
     RENDERER_DEFINES += -DHAVE_SUPERSAMPLING
 endif
@@ -280,6 +287,18 @@ PLATFORM_DEFINES :=
 # ============================================================
 # Platform-Specific Configuration
 # ============================================================
+
+# ============ Emscripten ============
+ifeq ($(platform),emscripten)
+    TARGET := $(TARGET_NAME)_libretro_emscripten.a
+    CC = emcc
+    CXX = em++
+    AR = emar
+    fpic := -fPIC
+    CFLAGS += -sUSE_ZLIB=1
+    CXXFLAGS += -sUSE_ZLIB=1
+    PLATFORM_DEFINES += -DGLES -Dgles -DHAVE_OPENGLES=1 -DHAVE_OPENGLES3=1 -DCORE_GLES -DGL_GLEXT_PROTOTYPES
+endif
 
 # ============ UNIX/LINUX (Default) ============
 ifeq ($(platform),unix)
@@ -627,7 +646,7 @@ endif
 ifeq ($(EXTERNAL_ZLIB),1)
     INCFLAGS += $(shell pkg-config --cflags zlib)
     LIBS += $(shell pkg-config --libs zlib)
-else
+else ifneq ($(platform),emscripten)
     LIBS += -lz
 endif
 
@@ -660,10 +679,15 @@ $(BUNDLED_SUPERMODEL_H): $(CORE_DIR)/Config/Supermodel.ini
 	xxd -i $< | sed 's/unsigned char.*\[\]/const unsigned char bundled_supermodel_ini[]/' \
 	           | sed 's/unsigned int.*_len/const unsigned int bundled_supermodel_ini_len/' > $@
 
+ifeq ($(platform),emscripten)
+$(TARGET): $(OBJECTS)
+	$(AR) rcs $@ $(OBJECTS)
+else
 $(TARGET): $(OBJECTS)
 	@echo "Linking $(TARGET)..."
 	$(CXX) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $@
 	@echo "Build complete: $@"
+endif
 
 # Special handling for ppc.o: strip -ffast-math to avoid FENV_ACCESS pragma conflicts
 # ppc_ops.c contains #pragma STDC FENV_ACCESS ON which requires precise FP semantics

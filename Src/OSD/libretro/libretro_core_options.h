@@ -612,7 +612,11 @@ static struct retro_core_option_v2_definition option_defs[] = {
          { "multi_gpu", "Multi-threaded + GPU (Default)" },
          { NULL, NULL },
       },
+#ifdef __EMSCRIPTEN__
+      "single"
+#else
       "multi_gpu"
+#endif
    },
 #ifdef __aarch64__
    {
@@ -828,7 +832,12 @@ void update_core_options(void)
 
    {
       const char *threading = option_get(
-         "supermodel_emulation_threading", "multi_gpu");
+         "supermodel_emulation_threading",
+#ifdef __EMSCRIPTEN__
+         "single");
+#else
+         "multi_gpu");
+#endif
       g_options.emulation_threading =
          strcmp(threading, "single") == 0
             ? EmulationThreading::SingleThread
